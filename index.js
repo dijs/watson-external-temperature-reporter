@@ -1,15 +1,22 @@
 require('dotenv').config();
 
 const http = require('http');
+const sensor = require('ds18b20-raspi');
 
 const receiverHost = process.env.RECEIVER_HOST;
 const receiverPort = process.env.RECEIVER_PORT;
 const measurementId = process.env.MEASUREMENT_ID;
-
-const reportingIntervalTime = 1000 * 10;
+const reportingIntervalTime = process.env.REPORTING_TIME || (1000 * 10);
 
 if (!receiverHost || !receiverPort || !measurementId) {
   console.log('You must create and configure a .env file');
+  process.exit();
+}
+
+const sensorList = sensor.list();
+
+if (sensorList.length === 0) {
+  console.log('No sensors found');
   process.exit();
 }
 
@@ -31,10 +38,17 @@ function handleResponse(res) {
 
 const report = value => http.get(createRequestOptions(value), handleResponse);
 
-setInterval(() => {
-  const value = Math.random() * 50;
+function takeReading() {
+  const sensorReadings = sensor.readAllC();
+  if (sensorReadings.length === 0) {
+    console.log('No sensors readings');
+    return;
+  }
+  const value = sensorReadings[0].t;
   report(value);
   console.log(`Reported: ${value}`);
-}, reportingIntervalTime);
+}
+
+setInterval(takeReading, reportingIntervalTime);
 
 console.log('Started External Temperature Reporter');

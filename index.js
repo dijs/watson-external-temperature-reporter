@@ -37,11 +37,11 @@ function handleResponse(res) {
 }
 
 const report = value => {
-  try {
-    http.get(createRequestOptions(value), handleResponse);
-  } catch (e) {
-    console.log('Could not report data', e);
-  }
+  http
+    .get(createRequestOptions(value), handleResponse)
+    .on('error', e => {
+      console.log('Could not report data', e.message);
+    });
 }
 
 function takeReading() {
